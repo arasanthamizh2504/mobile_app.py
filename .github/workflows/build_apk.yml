@@ -24,17 +24,38 @@ jobs:
           python -m pip install --upgrade pip
           pip install flet
 
-      - name: Ensure main.py exists
+      - name: Find and Prepare main.py
         run: |
-          if [ ! -f "main.py" ]; then
-            if [ -f "mobile_app.py" ]; then
-              cp mobile_app.py main.py
-            elif [ -f "app.py" ]; then
-              cp app.py main.py
+          echo "Current directory files:"
+          ls -la
+          
+          # Find any python file in the repository and copy to main.py
+          if [ -f "main.py" ]; then
+            echo "Found main.py in root"
+          elif [ -f "mobile_app.py" ]; then
+            cp mobile_app.py main.py
+          elif [ -f "app.py" ]; then
+            cp app.py main.py
+          elif [ -f "offline_music_player/mobile_app.py" ]; then
+            cp offline_music_player/mobile_app.py main.py
+          elif [ -f "offline_music_player/app.py" ]; then
+            cp offline_music_player/app.py main.py
+          else
+            # Search anywhere in repo for the first python file
+            PY_FILE=$(find . -name "*.py" ! -name "generate*" ! -name "test*" | head -n 1)
+            if [ -n "$PY_FILE" ]; then
+              echo "Found Python file at: $PY_FILE"
+              cp "$PY_FILE" main.py
             fi
           fi
+          
+          # Verify main.py now exists
+          if [ ! -f "main.py" ]; then
+            echo "Error: Could not locate a python file to build!"
+            exit 1
+          fi
 
-      - name: Build Android APK (Auto-Accept Prompts)
+      - name: Build Android APK
         run: |
           yes | flet build apk --project="OfflineMusic" --no-android-splash -v
 
